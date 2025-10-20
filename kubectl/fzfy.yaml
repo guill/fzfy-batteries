@@ -1,0 +1,683 @@
+# kubectl batteries-included module for fzfy
+#
+# Usage: Import this module from your main fzfy config:
+#   modules:
+#     kubectl:
+#       from: "./kubectl/fzfy.yaml"
+#       trusted: true  # Required for command variables
+
+# Dynamic variables to fetch Kubernetes resources
+vars:
+  # Pods
+  pods:
+    command: "kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Deployments
+  deployments:
+    command: "kubectl get deployments -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Services
+  services:
+    command: "kubectl get services -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # ConfigMaps
+  configmaps:
+    command: "kubectl get configmaps -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Secrets
+  secrets:
+    command: "kubectl get secrets -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Nodes
+  nodes:
+    command: "kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Namespaces
+  namespaces:
+    command: "kubectl get namespaces -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # StatefulSets
+  statefulsets:
+    command: "kubectl get statefulsets -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # DaemonSets
+  daemonsets:
+    command: "kubectl get daemonsets -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Jobs
+  jobs:
+    command: "kubectl get jobs -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # CronJobs
+  cronjobs:
+    command: "kubectl get cronjobs -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Ingresses
+  ingresses:
+    command: "kubectl get ingresses -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # PersistentVolumes
+  pvs:
+    command: "kubectl get pv -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # PersistentVolumeClaims
+  pvcs:
+    command: "kubectl get pvc -o jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"
+    format: lines
+
+  # Contexts
+  contexts:
+    command: "kubectl config get-contexts -o name"
+    format: lines
+
+  currentcontext:
+    command: "kubectl config current-context"
+    format: output
+
+  header: "{{var.currentcontext}}"
+
+# Sublists for each resource type
+lists:
+  # Main entry point - list of resource types
+  default:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Contexts"
+        sublist: contexts-list
+
+      - name: "Pods"
+        sublist: pods-list
+
+      - name: "Deployments"
+        sublist: deployments-list
+
+      - name: "Services"
+        sublist: services-list
+
+      - name: "ConfigMaps"
+        sublist: configmaps-list
+
+      - name: "Secrets"
+        sublist: secrets-list
+
+      - name: "Nodes"
+        sublist: nodes-list
+
+      - name: "Namespaces"
+        sublist: namespaces-list
+
+      - name: "StatefulSets"
+        sublist: statefulsets-list
+
+      - name: "DaemonSets"
+        sublist: daemonsets-list
+
+      - name: "Jobs"
+        sublist: jobs-list
+
+      - name: "CronJobs"
+        sublist: cronjobs-list
+
+      - name: "Ingresses"
+        sublist: ingresses-list
+
+      - name: "PersistentVolumes"
+        sublist: pvs-list
+
+      - name: "PersistentVolumeClaims"
+        sublist: pvcs-list
+
+  # ===== CONTEXTS =====
+  contexts-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: context
+        in: var.contexts
+        name: "{{context}}"
+        sublist: context-operations
+        vars:
+          resource: "{{context}}"
+
+  context-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Switch to this context"
+        command: "kubectl config use-context {{var.resource}}"
+
+      - name: "View context details"
+        command: "kubectl config get-contexts {{var.resource}}"
+
+      - name: "Delete context"
+        command: "kubectl config delete-context {{var.resource}}"
+
+  # ===== PODS =====
+  pods-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: pod
+        in: var.pods
+        name: "{{pod}}"
+        sublist: pod-operations
+        vars:
+          resource: "{{pod}}"
+
+  pod-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe pod {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get pod {{var.resource}} -o yaml"
+
+      - name: "Logs"
+        command: "kubectl logs {{var.resource}}"
+
+      - name: "Logs (follow)"
+        command: "kubectl logs -f {{var.resource}}"
+
+      - name: "Logs (previous)"
+        command: "kubectl logs --previous {{var.resource}}"
+
+      - name: "Exec (bash)"
+        command: "kubectl exec -it {{var.resource}} -- /bin/bash"
+
+      - name: "Exec (sh)"
+        command: "kubectl exec -it {{var.resource}} -- /bin/sh"
+
+      - name: "Port Forward"
+        sublist: pod-port-forward
+
+      - name: "Delete"
+        command: "kubectl delete pod {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit pod {{var.resource}}"
+
+  pod-port-forward:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "8080:8080"
+        command: "kubectl port-forward {{var.resource}} 8080:8080"
+
+      - name: "3000:3000"
+        command: "kubectl port-forward {{var.resource}} 3000:3000"
+
+      - name: "5432:5432 (PostgreSQL)"
+        command: "kubectl port-forward {{var.resource}} 5432:5432"
+
+      - name: "6379:6379 (Redis)"
+        command: "kubectl port-forward {{var.resource}} 6379:6379"
+
+      - name: "9090:9090 (Prometheus)"
+        command: "kubectl port-forward {{var.resource}} 9090:9090"
+
+  # ===== DEPLOYMENTS =====
+  deployments-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: deployment
+        in: var.deployments
+        name: "{{deployment}}"
+        sublist: deployment-operations
+        vars:
+          resource: "{{deployment}}"
+
+  deployment-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe deployment {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get deployment {{var.resource}} -o yaml"
+
+      - name: "Scale"
+        sublist: deployment-scale
+
+      - name: "Rollout Status"
+        command: "kubectl rollout status deployment {{var.resource}}"
+
+      - name: "Rollout History"
+        command: "kubectl rollout history deployment {{var.resource}}"
+
+      - name: "Rollout Restart"
+        command: "kubectl rollout restart deployment {{var.resource}}"
+
+      - name: "Rollout Undo"
+        command: "kubectl rollout undo deployment {{var.resource}}"
+
+      - name: "Delete"
+        command: "kubectl delete deployment {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit deployment {{var.resource}}"
+
+  deployment-scale:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Scale to 0"
+        command: "kubectl scale deployment {{var.resource}} --replicas=0"
+
+      - name: "Scale to 1"
+        command: "kubectl scale deployment {{var.resource}} --replicas=1"
+
+      - name: "Scale to 2"
+        command: "kubectl scale deployment {{var.resource}} --replicas=2"
+
+      - name: "Scale to 3"
+        command: "kubectl scale deployment {{var.resource}} --replicas=3"
+
+      - name: "Scale to 5"
+        command: "kubectl scale deployment {{var.resource}} --replicas=5"
+
+  # ===== SERVICES =====
+  services-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: service
+        in: var.services
+        name: "{{service}}"
+        sublist: service-operations
+        vars:
+          resource: "{{service}}"
+
+  service-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe service {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get service {{var.resource}} -o yaml"
+
+      - name: "Port Forward"
+        sublist: service-port-forward
+
+      - name: "Delete"
+        command: "kubectl delete service {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit service {{var.resource}}"
+
+  service-port-forward:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "8080:8080"
+        command: "kubectl port-forward service/{{var.resource}} 8080:8080"
+
+      - name: "3000:3000"
+        command: "kubectl port-forward service/{{var.resource}} 3000:3000"
+
+      - name: "5432:5432 (PostgreSQL)"
+        command: "kubectl port-forward service/{{var.resource}} 5432:5432"
+
+      - name: "6379:6379 (Redis)"
+        command: "kubectl port-forward service/{{var.resource}} 6379:6379"
+
+  # ===== CONFIGMAPS =====
+  configmaps-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: configmap
+        in: var.configmaps
+        name: "{{configmap}}"
+        sublist: configmap-operations
+        vars:
+          resource: "{{configmap}}"
+
+  configmap-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe configmap {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get configmap {{var.resource}} -o yaml"
+
+      - name: "Delete"
+        command: "kubectl delete configmap {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit configmap {{var.resource}}"
+
+  # ===== SECRETS =====
+  secrets-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: secret
+        in: var.secrets
+        name: "{{secret}}"
+        sublist: secret-operations
+        vars:
+          resource: "{{secret}}"
+
+  secret-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe secret {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get secret {{var.resource}} -o yaml"
+
+      - name: "Delete"
+        command: "kubectl delete secret {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit secret {{var.resource}}"
+
+  # ===== NODES =====
+  nodes-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: node
+        in: var.nodes
+        name: "{{node}}"
+        sublist: node-operations
+        vars:
+          resource: "{{node}}"
+
+  node-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe node {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get node {{var.resource}} -o yaml"
+
+      - name: "Cordon"
+        command: "kubectl cordon {{var.resource}}"
+
+      - name: "Uncordon"
+        command: "kubectl uncordon {{var.resource}}"
+
+      - name: "Drain"
+        command: "kubectl drain {{var.resource}} --ignore-daemonsets --delete-emptydir-data"
+
+      - name: "Top (resource usage)"
+        command: "kubectl top node {{var.resource}}"
+
+  # ===== NAMESPACES =====
+  namespaces-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: namespace
+        in: var.namespaces
+        name: "{{namespace}}"
+        sublist: namespace-operations
+        vars:
+          resource: "{{namespace}}"
+
+  namespace-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe namespace {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get namespace {{var.resource}} -o yaml"
+
+      - name: "Set as current context"
+        command: "kubectl config set-context --current --namespace={{var.resource}}"
+
+      - name: "Delete"
+        command: "kubectl delete namespace {{var.resource}}"
+
+  # ===== STATEFULSETS =====
+  statefulsets-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: statefulset
+        in: var.statefulsets
+        name: "{{statefulset}}"
+        sublist: statefulset-operations
+        vars:
+          resource: "{{statefulset}}"
+
+  statefulset-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe statefulset {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get statefulset {{var.resource}} -o yaml"
+
+      - name: "Scale"
+        sublist: statefulset-scale
+
+      - name: "Rollout Restart"
+        command: "kubectl rollout restart statefulset {{var.resource}}"
+
+      - name: "Delete"
+        command: "kubectl delete statefulset {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit statefulset {{var.resource}}"
+
+  statefulset-scale:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Scale to 0"
+        command: "kubectl scale statefulset {{var.resource}} --replicas=0"
+
+      - name: "Scale to 1"
+        command: "kubectl scale statefulset {{var.resource}} --replicas=1"
+
+      - name: "Scale to 2"
+        command: "kubectl scale statefulset {{var.resource}} --replicas=2"
+
+      - name: "Scale to 3"
+        command: "kubectl scale statefulset {{var.resource}} --replicas=3"
+
+  # ===== DAEMONSETS =====
+  daemonsets-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: daemonset
+        in: var.daemonsets
+        name: "{{daemonset}}"
+        sublist: daemonset-operations
+        vars:
+          resource: "{{daemonset}}"
+
+  daemonset-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe daemonset {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get daemonset {{var.resource}} -o yaml"
+
+      - name: "Rollout Status"
+        command: "kubectl rollout status daemonset {{var.resource}}"
+
+      - name: "Rollout History"
+        command: "kubectl rollout history daemonset {{var.resource}}"
+
+      - name: "Rollout Restart"
+        command: "kubectl rollout restart daemonset {{var.resource}}"
+
+      - name: "Delete"
+        command: "kubectl delete daemonset {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit daemonset {{var.resource}}"
+
+  # ===== JOBS =====
+  jobs-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: job
+        in: var.jobs
+        name: "{{job}}"
+        sublist: job-operations
+        vars:
+          resource: "{{job}}"
+
+  job-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe job {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get job {{var.resource}} -o yaml"
+
+      - name: "Logs"
+        command: "kubectl logs job/{{var.resource}}"
+
+      - name: "Delete"
+        command: "kubectl delete job {{var.resource}}"
+
+  # ===== CRONJOBS =====
+  cronjobs-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: cronjob
+        in: var.cronjobs
+        name: "{{cronjob}}"
+        sublist: cronjob-operations
+        vars:
+          resource: "{{cronjob}}"
+
+  cronjob-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe cronjob {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get cronjob {{var.resource}} -o yaml"
+
+      - name: "Create Job from CronJob"
+        command: "kubectl create job --from=cronjob/{{var.resource}} {{var.resource}}-manual-run"
+
+      - name: "Delete"
+        command: "kubectl delete cronjob {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit cronjob {{var.resource}}"
+
+  # ===== INGRESSES =====
+  ingresses-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: ingress
+        in: var.ingresses
+        name: "{{ingress}}"
+        sublist: ingress-operations
+        vars:
+          resource: "{{ingress}}"
+
+  ingress-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe ingress {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get ingress {{var.resource}} -o yaml"
+
+      - name: "Delete"
+        command: "kubectl delete ingress {{var.resource}}"
+
+      - name: "Edit"
+        command: "kubectl edit ingress {{var.resource}}"
+
+  # ===== PERSISTENTVOLUMES =====
+  pvs-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: pv
+        in: var.pvs
+        name: "{{pv}}"
+        sublist: pv-operations
+        vars:
+          resource: "{{pv}}"
+
+  pv-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe pv {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get pv {{var.resource}} -o yaml"
+
+      - name: "Delete"
+        command: "kubectl delete pv {{var.resource}}"
+
+  # ===== PERSISTENTVOLUMECLAIMS =====
+  pvcs-list:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - for: pvc
+        in: var.pvcs
+        name: "{{pvc}}"
+        sublist: pvc-operations
+        vars:
+          resource: "{{pvc}}"
+
+  pvc-operations:
+    fzf-options:
+      header: "{{var.header}}"
+    entries:
+      - name: "Describe"
+        command: "kubectl describe pvc {{var.resource}}"
+
+      - name: "Get YAML"
+        command: "kubectl get pvc {{var.resource}} -o yaml"
+
+      - name: "Delete"
+        command: "kubectl delete pvc {{var.resource}}"
