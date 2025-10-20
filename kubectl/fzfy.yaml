@@ -333,35 +333,13 @@ lists:
         command: "kubectl exec -it {{var.resource}} -n {{var.selected_namespace}} -- /bin/sh"
 
       - name: "Port Forward"
-        sublist: pod-port-forward
-        vars:
-          resource: "{{var.resource}}"
-          selected_namespace: "{{var.selected_namespace}}"
+        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} "
 
       - name: "Delete"
         command: "kubectl delete pod {{var.resource}} -n {{var.selected_namespace}}"
 
       - name: "Edit"
         command: "kubectl edit pod {{var.resource}} -n {{var.selected_namespace}}"
-
-  pod-port-forward:
-    fzf-options:
-      header: "{{var.header}}"
-    entries:
-      - name: "8080:8080"
-        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} 8080:8080"
-
-      - name: "3000:3000"
-        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} 3000:3000"
-
-      - name: "5432:5432 (PostgreSQL)"
-        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} 5432:5432"
-
-      - name: "6379:6379 (Redis)"
-        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} 6379:6379"
-
-      - name: "9090:9090 (Prometheus)"
-        command: "kubectl port-forward {{var.resource}} -n {{var.selected_namespace}} 9090:9090"
 
   # ===== DEPLOYMENTS =====
   deployments-list:
@@ -387,10 +365,7 @@ lists:
         command: "kubectl get deployment {{var.resource}} -n {{var.selected_namespace}} -o yaml"
 
       - name: "Scale"
-        sublist: deployment-scale
-        vars:
-          resource: "{{var.resource}}"
-          selected_namespace: "{{var.selected_namespace}}"
+        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas="
 
       - name: "Rollout Status"
         command: "kubectl rollout status deployment {{var.resource}} -n {{var.selected_namespace}}"
@@ -409,25 +384,6 @@ lists:
 
       - name: "Edit"
         command: "kubectl edit deployment {{var.resource}} -n {{var.selected_namespace}}"
-
-  deployment-scale:
-    fzf-options:
-      header: "{{var.header}}"
-    entries:
-      - name: "Scale to 0"
-        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas=0"
-
-      - name: "Scale to 1"
-        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas=1"
-
-      - name: "Scale to 2"
-        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas=2"
-
-      - name: "Scale to 3"
-        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas=3"
-
-      - name: "Scale to 5"
-        command: "kubectl scale deployment {{var.resource}} -n {{var.selected_namespace}} --replicas=5"
 
   # ===== SERVICES =====
   services-list:
@@ -453,32 +409,13 @@ lists:
         command: "kubectl get service {{var.resource}} -n {{var.selected_namespace}} -o yaml"
 
       - name: "Port Forward"
-        sublist: service-port-forward
-        vars:
-          resource: "{{var.resource}}"
-          selected_namespace: "{{var.selected_namespace}}"
+        command: "kubectl port-forward service/{{var.resource}} -n {{var.selected_namespace}} "
 
       - name: "Delete"
         command: "kubectl delete service {{var.resource}} -n {{var.selected_namespace}}"
 
       - name: "Edit"
         command: "kubectl edit service {{var.resource}} -n {{var.selected_namespace}}"
-
-  service-port-forward:
-    fzf-options:
-      header: "{{var.header}}"
-    entries:
-      - name: "8080:8080"
-        command: "kubectl port-forward service/{{var.resource}} -n {{var.selected_namespace}} 8080:8080"
-
-      - name: "3000:3000"
-        command: "kubectl port-forward service/{{var.resource}} -n {{var.selected_namespace}} 3000:3000"
-
-      - name: "5432:5432 (PostgreSQL)"
-        command: "kubectl port-forward service/{{var.resource}} -n {{var.selected_namespace}} 5432:5432"
-
-      - name: "6379:6379 (Redis)"
-        command: "kubectl port-forward service/{{var.resource}} -n {{var.selected_namespace}} 6379:6379"
 
   # ===== CONFIGMAPS =====
   configmaps-list:
@@ -624,10 +561,7 @@ lists:
         command: "kubectl get statefulset {{var.resource}} -n {{var.selected_namespace}} -o yaml"
 
       - name: "Scale"
-        sublist: statefulset-scale
-        vars:
-          resource: "{{var.resource}}"
-          selected_namespace: "{{var.selected_namespace}}"
+        command: "kubectl scale statefulset {{var.resource}} -n {{var.selected_namespace}} --replicas="
 
       - name: "Rollout Restart"
         command: "kubectl rollout restart statefulset {{var.resource}} -n {{var.selected_namespace}}"
@@ -637,22 +571,6 @@ lists:
 
       - name: "Edit"
         command: "kubectl edit statefulset {{var.resource}} -n {{var.selected_namespace}}"
-
-  statefulset-scale:
-    fzf-options:
-      header: "{{var.header}}"
-    entries:
-      - name: "Scale to 0"
-        command: "kubectl scale statefulset {{var.resource}} -n {{var.selected_namespace}} --replicas=0"
-
-      - name: "Scale to 1"
-        command: "kubectl scale statefulset {{var.resource}} -n {{var.selected_namespace}} --replicas=1"
-
-      - name: "Scale to 2"
-        command: "kubectl scale statefulset {{var.resource}} -n {{var.selected_namespace}} --replicas=2"
-
-      - name: "Scale to 3"
-        command: "kubectl scale statefulset {{var.resource}} -n {{var.selected_namespace}} --replicas=3"
 
   # ===== DAEMONSETS =====
   daemonsets-list:
