@@ -46,6 +46,44 @@ entries:
 - PersistentVolumes
 - PersistentVolumeClaims
 
+### qdpi
+
+Fuzzy menu for managing qdpi (Quick Development PIpeline) environments.
+
+**Features:**
+- List environments with status indicators (✓ clean, ⚠ uncommitted, ↑ unpushed)
+- Quick navigation to environment directories
+- Per-repository git operations
+- Browse and review GitHub PRs from configured repositories
+- Environment creation via TUI
+- Configuration management
+
+**Usage:**
+
+```yaml
+modules:
+  qdpi:
+    from: "/path/to/fzfy-batteries/qdpi/fzfy.yaml"
+    trusted: true
+
+entries:
+  - name: "QDPI"
+    sublist: modules.qdpi
+```
+
+**Menu Structure:**
+- Environments (with status) → cd, open in editor, info, repositories, delete
+- Create Environment → launches qdpi TUI
+- Status → shows all environments
+- Configuration → show, edit, initialize
+- Pull Requests → browse open PRs by repo → create review environment, view, open in browser
+- My Pull Requests → same as above, filtered to PRs assigned to you
+
+**Requirements:**
+- [qdpi](https://github.com/guill/qdpi) installed and configured
+- [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated
+- jq (for JSON parsing)
+
 ## Installation
 
 ```bash
@@ -60,7 +98,8 @@ git clone https://github.com/guill/fzfy-batteries.git ~/.config/fzfy/batteries
 
 - [fzfy](https://github.com/guill/fzfy)
 - fzf
-- Tool-specific CLIs (kubectl, docker, etc.) depending on which modules you use
+- jq (for modules that parse JSON)
+- Tool-specific CLIs (kubectl, qdpi, etc.) depending on which modules you use
 
 ## Contributing
 

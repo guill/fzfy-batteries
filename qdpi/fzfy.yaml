@@ -1,0 +1,192 @@
+vars:
+  environments:
+    command: "qdpi list --json | jq '[.[] | {name, status: (if .repos | any(.has_uncommitted) then \"⚠\" elif .repos | any(.commits_ahead > 0) then \"↑\" else \"✓\" end)}]'"
+    format: json
+
+  repos:
+    args: ['env_name']
+    command: "qdpi info {{env_name}} --json | jq -r '.repos[].name'"
+    shellarg_args: true
+    format: lines
+
+  is_initialized:
+    command: "test -f ~/.config/qdpi/config.yaml && echo true || echo false"
+    format: output
+
+  github_repos:
+    command: "qdpi config --json | jq '[.repositories | to_entries[] | select(.value.url | test(\"github.com\")) | {name: .key, github: (.value.url | gsub(\"^git@github.com:\"; \"\") | gsub(\"\\\\.git$\"; \"\") | gsub(\"^https://github.com/\"; \"\"))}]'"
+    format: json
+
+  open_prs:
+    args: ['repo_name', 'github_path']
+    command: "gh pr list --repo {{github_path}} --json number,title,author,headRefName,isDraft --limit 200 | jq '[.[] | {number, title: ((if .isDraft then \"[Draft] \" else \"\" end) + .title), author: .author.login, branch: .headRefName}]'"
+    shellarg_args: true
+    format: json
+
+  my_open_prs:
+    args: ['repo_name', 'github_path']
+    command: "gh pr list --repo {{github_path}} --assignee @me --json number,title,author,headRefName,isDraft --limit 200 | jq '[.[] | {number, title: ((if .isDraft then \"[Draft] \" else \"\" end) + .title), author: .author.login, branch: .headRefName}]'"
+    shellarg_args: true
+    format: json
+
+lists:
+  default:
+    fzf-options:
+      header: "QDPI - Quick Development PIpeline"
+    entries:
+      - for: env
+        in: var.environments
+        name: "{{env.name}} {{env.status}}"
+        sublist: env-operations
+        vars:
+          selected_env: "{{env.name}}"
+
+      - name: "Create Environment"
+        command: "qdpi create"
+
+      - name: "Status"
+        command: "qdpi list"
+
+      - name: "Configuration"
+        sublist: configuration
+
+      - name: "Pull Requests"
+        sublist: pr-repo-selector-all
+
+      - name: "My Pull Requests"
+        sublist: pr-repo-selector-mine
+
+  pr-repo-selector-all:
+    fzf-options:
+      header: "Pull Requests - Select Repository"
+    entries:
+      - for: repo
+        in: var.github_repos
+        name: "{{repo.name}} ({{repo.github}})"
+        sublist: pr-list-all
+        vars:
+          pr_repo_name: "{{repo.name}}"
+          pr_github_path: "{{repo.github}}"
+
+  pr-repo-selector-mine:
+    fzf-options:
+      header: "My Pull Requests - Select Repository"
+    entries:
+      - for: repo
+        in: var.github_repos
+        name: "{{repo.name}} ({{repo.github}})"
+        sublist: pr-list-mine
+        vars:
+          pr_repo_name: "{{repo.name}}"
+          pr_github_path: "{{repo.github}}"
+
+  pr-list-all:
+    fzf-options:
+      header: "{{var.pr_repo_name}} - Pull Requests"
+    entries:
+      - for: pr
+        in: var.open_prs(repo_name=var.pr_repo_name, github_path=var.pr_github_path)
+        name: "#{{pr.number}}: {{pr.title}} (@{{pr.author}})"
+        sublist: pr-operations
+        vars:
+          pr_repo_name: "{{var.pr_repo_name}}"
+          pr_github_path: "{{var.pr_github_path}}"
+          pr_number: "{{pr.number}}"
+          pr_title: "{{pr.title}}"
+          pr_author: "{{pr.author}}"
+
+      - name: "No open PRs"
+        command: "echo 'No open pull requests in {{var.pr_repo_name}}'"
+        if: "{{var.open_prs(repo_name=var.pr_repo_name, github_path=var.pr_github_path) | length == 0}}"
+
+  pr-list-mine:
+    fzf-options:
+      header: "{{var.pr_repo_name}} - My Pull Requests"
+    entries:
+      - for: pr
+        in: var.my_open_prs(repo_name=var.pr_repo_name, github_path=var.pr_github_path)
+        name: "#{{pr.number}}: {{pr.title}} (@{{pr.author}})"
+        sublist: pr-operations
+        vars:
+          pr_repo_name: "{{var.pr_repo_name}}"
+          pr_github_path: "{{var.pr_github_path}}"
+          pr_number: "{{pr.number}}"
+          pr_title: "{{pr.title}}"
+          pr_author: "{{pr.author}}"
+
+      - name: "No PRs assigned to you"
+        command: "echo 'No pull requests assigned to you in {{var.pr_repo_name}}'"
+        if: "{{var.my_open_prs(repo_name=var.pr_repo_name, github_path=var.pr_github_path) | length == 0}}"
+
+  pr-operations:
+    fzf-options:
+      header: "#{{var.pr_number}}: {{var.pr_title}}"
+    entries:
+      - name: "Create Review Environment"
+        command: "qdpi review {{var.pr_repo_name}}#{{var.pr_number}}"
+
+      - name: "View Details"
+        command: "gh pr view {{var.pr_number}} --repo {{var.pr_github_path}}"
+
+      - name: "Open in Browser"
+        command: "gh pr view {{var.pr_number}} --repo {{var.pr_github_path}} --web"
+
+  env-operations:
+    fzf-options:
+      header: "Environment: {{var.selected_env}}"
+    entries:
+      - name: "cd to {{var.selected_env}}"
+        command: "cd $(qdpi path {{var.selected_env}})"
+
+      - name: "Open in $EDITOR"
+        command: "cd $(qdpi path {{var.selected_env}}) && $EDITOR ."
+
+      - name: "Info"
+        command: "qdpi info {{var.selected_env}}"
+
+      - name: "Repositories"
+        sublist: repo-selector
+        vars:
+          selected_env: "{{var.selected_env}}"
+
+      - name: "Delete"
+        command: "qdpi delete {{var.selected_env}}"
+
+  repo-selector:
+    fzf-options:
+      header: "{{var.selected_env}} - Repositories"
+    entries:
+      - for: repo
+        in: var.repos(env_name=var.selected_env)
+        name: "{{repo}}"
+        sublist: repo-operations
+        vars:
+          selected_env: "{{var.selected_env}}"
+          selected_repo: "{{repo}}"
+
+  repo-operations:
+    fzf-options:
+      header: "{{var.selected_env}}/{{var.selected_repo}}"
+    entries:
+      - name: "cd to {{var.selected_repo}}"
+        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}}"
+
+      - name: "Open in $EDITOR"
+        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}} && $EDITOR ."
+
+      - name: "git status"
+        command: "git -C $(qdpi path {{var.selected_env}})/{{var.selected_repo}} status"
+
+  configuration:
+    fzf-options:
+      header: "QDPI Configuration"
+    entries:
+      - name: "Show Config"
+        command: "qdpi config"
+
+      - name: "Edit Config"
+        command: "$EDITOR $(qdpi config --path)"
+
+      - name: "Initialize"
+        command: "qdpi init"
+        if: "{{var.is_initialized == 'false'}}"
