@@ -34,12 +34,12 @@ lists:
     fzf-options:
       header: "QDPI - Quick Development PIpeline"
     entries:
-      - for: env
+      - for: environment
         in: var.environments
-        name: "{{env.name}} {{env.status}}"
+        name: "{{environment.name}} {{environment.status}}"
         sublist: env-operations
         vars:
-          selected_env: "{{env.name}}"
+          selected_env: "{{environment.name}}"
 
       - name: "Create Environment"
         command: "qdpi create"
