@@ -36,7 +36,7 @@ lists:
     entries:
       - for: environment
         in: var.environments
-        name: "{{environment.name}} {{environment.status}}"
+        name: "[Environment] {{environment.name}} {{environment.status}}"
         sublist: env-operations
         vars:
           selected_env: "{{environment.name}}"
@@ -139,7 +139,7 @@ lists:
         command: "cd $(qdpi path {{var.selected_env}})"
 
       - name: "Open in $EDITOR"
-        command: "cd $(qdpi path {{var.selected_env}}) && $EDITOR ."
+        command: "cd $(qdpi path {{var.selected_env}}) && $EDITOR"
 
       - name: "Info"
         command: "qdpi info {{var.selected_env}}"
@@ -172,7 +172,7 @@ lists:
         command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}}"
 
       - name: "Open in $EDITOR"
-        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}} && $EDITOR ."
+        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}} && $EDITOR"
 
       - name: "git status"
         command: "git -C $(qdpi path {{var.selected_env}})/{{var.selected_repo}} status"
