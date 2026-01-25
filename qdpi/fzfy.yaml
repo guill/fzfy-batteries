@@ -144,38 +144,29 @@ lists:
       - name: "Info"
         command: "qdpi info {{var.selected_env}}"
 
-      - name: "Repositories"
-        sublist: repo-selector
+      - for: repo
+        in: var.repos(env_name=var.selected_env)
+        name: "[Repo] {{repo}}"
+        sublist: repo-operations
         vars:
-          selected_env: "{{var.selected_env}}"
+          selected_repo: "{{repo}}"
+          repo_path: "$(qdpi path {{var.selected_env}})/{{repo}}"
 
       - name: "Delete"
         command: "qdpi delete {{var.selected_env}}"
 
-  repo-selector:
-    fzf-options:
-      header: "{{var.selected_env}} - Repositories"
-    entries:
-      - for: repo
-        in: var.repos(env_name=var.selected_env)
-        name: "{{repo}}"
-        sublist: repo-operations
-        vars:
-          selected_env: "{{var.selected_env}}"
-          selected_repo: "{{repo}}"
-
   repo-operations:
     fzf-options:
-      header: "{{var.selected_env}}/{{var.selected_repo}}"
+      header: "{{var.selected_repo}}"
     entries:
       - name: "cd to {{var.selected_repo}}"
-        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}}"
+        command: "cd {{var.repo_path}}"
 
       - name: "Open in $EDITOR"
-        command: "cd $(qdpi path {{var.selected_env}})/{{var.selected_repo}} && $EDITOR"
+        command: "cd {{var.repo_path}} && $EDITOR"
 
       - name: "git status"
-        command: "git -C $(qdpi path {{var.selected_env}})/{{var.selected_repo}} status"
+        command: "git -C {{var.repo_path}} status"
 
   configuration:
     fzf-options:
