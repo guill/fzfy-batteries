@@ -144,6 +144,9 @@ lists:
       - name: "Info"
         command: "qdpi info {{var.selected_env}}"
 
+      - name: "Update (git pull --ff-only)"
+        command: "qdpi update {{var.selected_env}}"
+
       - for: repo
         in: var.repos(env_name=var.selected_env)
         name: "[Repo] {{repo}}"

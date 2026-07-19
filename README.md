@@ -72,7 +72,7 @@ entries:
 ```
 
 **Menu Structure:**
-- Environments (with status) → cd, open in editor, info, repositories, delete
+- Environments (with status) → cd, open in editor, info, update (git pull --ff-only), repositories, delete
 - Create Environment → launches qdpi TUI
 - Status → shows all environments
 - Configuration → show, edit, initialize
